@@ -646,3 +646,106 @@ if __name__ == "__main__":
     # ─────────────────────────────────────────────────────────────────────────
 
     print_dashboard(dashboard_results)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  FLASK API SERVER
+# ─────────────────────────────────────────────────────────────────────────────
+
+from flask import Flask, jsonify
+from flask_cors import CORS
+import threading
+
+app = Flask(__name__)
+CORS(app)  # allow your HTML page (different origin) to call the API
+
+# pip3 install flask flask-cors --break-system-packages
+
+@app.route("/api/nodes")
+def api_nodes():
+    """
+    Returns live scores + diagnosis for all known nodes.
+    The HTML dashboard polls this every 3 seconds.
+    """
+    results = []
+    known_nodes = [
+        "Dic_PortOlimpic_PuntaNord",
+        "Dic_PortOlimpic_CentreMig",
+        "Dic_PortOlimpic_ExtremSud",
+    ]
+    for node_id in known_nodes:
+        baseline = calculate_baseline(node_id)
+        if baseline is None:
+            continue
+        # Get the most recent reading for this node from the CSV
+        last = _get_last_reading(node_id)
+        if last is None:
+            continue
+        score, breakdown = calculate_biodiversity_score(last, baseline)
+        diagnosis = run_diagnostic_engine(last, baseline, score)
+        results.append({
+            "node_id":   node_id,
+            "score":     score,
+            "state":     _score_to_state(score),
+            "live":      last,
+            "diagnosis": diagnosis,
+            "penalties": breakdown.get("penalties", []),
+        })
+    return jsonify(results)
+
+
+@app.route("/api/latest/<node_id>")
+def api_latest(node_id):
+    """Full detail for a single node — called when user clicks a marker."""
+    baseline = calculate_baseline(node_id)
+    last     = _get_last_reading(node_id)
+    if not last or not baseline:
+        return jsonify({"error": "No data"}), 404
+    score, breakdown = calculate_biodiversity_score(last, baseline)
+    diagnosis = run_diagnostic_engine(last, baseline, score)
+    return jsonify({
+        "node_id":   node_id,
+        "score":     score,
+        "state":     _score_to_state(score),
+        "live":      last,
+        "baseline":  baseline,
+        "diagnosis": diagnosis,
+        "penalties": breakdown.get("penalties", []),
+    })
+
+
+def _get_last_reading(node_id: str) -> dict | None:
+    """Return the most recent CSV row for a node as a payload dict."""
+    if not os.path.isfile(CSV_PATH):
+        return None
+    last_row = None
+    with open(CSV_PATH, newline="") as f:
+        for row in csv.DictReader(f):
+            if row["node_id"] == node_id:
+                last_row = row
+    return _row_to_payload(last_row) if last_row else None
+
+
+def _score_to_state(score: int) -> str:
+    if score >= 85: return "healthy"
+    if score >= 60: return "recovering"
+    if score > 0:   return "stressed"
+    return "inactive"
+
+
+def _serial_listener_thread():
+    """Runs listen_serial() in a background thread so Flask can run alongside."""
+    try:
+        listen_serial()
+    except Exception as e:
+        print(f"[Serial] Error: {e}. Running in CSV-only mode.")
+
+
+if __name__ == "__main__":
+    # Start serial listener in background (won't crash if port not connected)
+    t = threading.Thread(target=_serial_listener_thread, daemon=True)
+    t.start()
+
+    print("[Edge Blau] API server starting on http://localhost:5050")
+    print("[Edge Blau] HTML dashboard can now poll /api/nodes")
+    app.run(host="0.0.0.0", port=5050, debug=False)
