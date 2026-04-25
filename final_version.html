@@ -795,7 +795,7 @@
       </p>
       <p class="slide-p">
         We deploy EdgeAI sensor nodes directly on the breakwater rocks. Each node runs a FOMO object detection model
-        on an <strong>Arduino UNO Q</strong> to count 5 native and invasive fish species in real time — measuring
+        on an <strong>Arduino UNO Q</strong> to count native and invasive fish species in real time — measuring
         temperature and pH simultaneously. No cloud. No connectivity required. Continuous 24/7.
       </p>
 
@@ -804,44 +804,45 @@
           <div class="ov-pillar-icon">🌡️</div>
           <div class="ov-pillar-title">The Problem</div>
           <div class="ov-pillar-text">
-            Thermal heatwaves push temps past 28 °C — bleaching Posidonia seagrass and wiping out juvenile fish in hours, not days.
-            Invasive Siganus luridus displace native Diplodus sargus with no one tracking the shift.
-            Manual surveys cost €10K+ and happen quarterly at best.
+            Extreme heatwaves are pushing ocean temperatures to lethal limits, triggering mass die-offs and ecological 
+            collapse in a matter of hours. As invasive species aggressively displace native wildlife, 
+            our current monitoring systems—crippled by high costs and slow data—are failing to track the devastation. 
+            We are losing entire marine ecosystems before we even realize they are gone.
           </div>
         </div>
         <div class="ov-pillar">
           <div class="ov-pillar-icon">🧠</div>
           <div class="ov-pillar-title">The Hardware</div>
           <div class="ov-pillar-text">
-            Each node uses a <strong>Modulino Thermo</strong> (water temp via I²C), a <strong>Modulino pH</strong>
-            (acidification events), and a USB camera running Edge Impulse FOMO at &lt;200 ms latency.
-            INT8 quantized. &lt;100 KB flash. No custom PCBs — deployable today.
+            Each node uses a <strong>Modulino Thermo</strong> to get temperature of the water, a <strong>Modulino pH</strong>
+            to account for acidification events, and a USB camera running Edge Impulse FOMO.
           </div>
         </div>
         <div class="ov-pillar">
           <div class="ov-pillar-icon">📡</div>
           <div class="ov-pillar-title">The Solution</div>
           <div class="ov-pillar-text">
-            Python backend receives Serial JSON → calculates biodiversity score (0–100) → runs root-cause diagnosis →
-            serves live data to this dashboard via Flask API. Every restoration decision is now data-driven
-            and surgical, multiplying impact and slashing waste.
+            Raw Serial Data → AI-Driven Biodiversity Scoring (0–100) → Instant Root-Cause Diagnosis → Live Flask API Dashboard
+            We’ve turned chaotic data into surgical action. By replacing guesswork with real-time intelligence, 
+            every restoration effort is now precision-engineered to multiply impact and obliterate waste.
           </div>
         </div>
       </div>
 
       <div class="stat-strip">
         <div class="stat-box"><div class="stat-num">14 km</div><div class="stat-lbl">Barcelona coastline</div></div>
-        <div class="stat-box"><div class="stat-num">0</div><div class="stat-lbl">real-time monitors today</div></div>
+        <div class="stat-box"><div class="stat-num">0</div><div class="stat-lbl">real-time nodes today</div></div>
         <div class="stat-box"><div class="stat-num">&lt;200ms</div><div class="stat-lbl">inference latency</div></div>
-        <div class="stat-box"><div class="stat-num">5</div><div class="stat-lbl">species tracked</div></div>
+        <div class="stat-box"><div class="stat-num">7</div><div class="stat-lbl">species tracked</div></div>
       </div>
 
       <div class="insight-box">
         <div class="insight-box-title">The BlauEdge insight</div>
         <p class="slide-p" style="margin:0">
-          Real-time zone-level health data lets us direct repopulation of <em>Posidonia oceanica</em>, sea urchins,
-          and bivalves with surgical precision — multiplying impact, slashing waste, sequestering blue carbon,
-          and boosting local fishing income.
+          Our live monitoring allows us to direct restoration efforts with absolute precision. By targeting 
+            specific zones with data-backed accuracy, we <strong>multiply ecological impact</strong>, 
+            <strong>slash resource waste</strong>, and accelerate <strong>blue carbon sequestration</strong>—directly 
+            revitalizing local economies and sustainable fishing yields.
         </p>
       </div>
 
