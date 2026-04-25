@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlauEdge — Marine Ecosystem Recovery Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --bg: #060e18;
+    --surface: #0d1c2e;
+    --surface2: #132236;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e8f0f8;
+    --muted: rgba(232,240,248,0.5);
+    --accent: #00d4ff;
+    --accent2: #0099cc;
+    --healthy: #00e676;
+    --recovering: #00b0ff;
+    --stressed: #ff5252;
+    --inactive: #78909c;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Top bar ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 56px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(6,14,24,0.95);
+    backdrop-filter: blur(12px);
+    z-index: 1000;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .logo-icon {
+    width: 30px;
+    height: 30px;
+    background: linear-gradient(135deg, #00d4ff, #0060aa);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--healthy);
+    animation: blink 1.4s ease-in-out infinite;
+    display: inline-block;
+    margin-right: 5px;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .hackupc-badge {
+    background: rgba(0,212,255,0.1);
+    border: 1px solid rgba(0,212,255,0.3);
+    color: var(--accent);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+  }
+
+  /* ── Slide navigation ── */
+  .slides-nav {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+    z-index: 100;
+  }
+
+  .slide-tab {
+    padding: 10px 20px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    background: none;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+  }
+
+  .slide-tab:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  .slide-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── Main content ── */
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Slide content ── */
+  .slide-content {
+    display: none;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .slide-content.active { display: flex; }
+
+  /* ── MAP SLIDE ── */
+  #slide-map {
+    flex-direction: row;
+  }
+
+  #map {
+    flex: 1;
+    height: 100%;
+    z-index: 1;
+  }
+
+  .map-sidebar {
+    width: 320px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-header {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .sidebar-sub {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    margin-top: 2px;
+  }
+
+  .node-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 12px;
+  }
+
+  .node-list::-webkit-scrollbar { width: 3px; }
+  .node-list::-webkit-scrollbar-track { background: transparent; }
+  .node-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .node-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 15px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .node-card:hover { border-color: var(--border2); background: rgba(255,255,255,0.04); }
+  .node-card.selected { border-color: var(--accent); background: rgba(0,212,255,0.06); }
+
+  .node-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .node-id {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .state-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .badge-healthy { background: rgba(0,230,118,0.15); color: var(--healthy); border: 1px solid rgba(0,230,118,0.3); }
+  .badge-recovering { background: rgba(0,176,255,0.15); color: var(--recovering); border: 1px solid rgba(0,176,255,0.3); }
+  .badge-stressed { background: rgba(255,82,82,0.15); color: var(--stressed); border: 1px solid rgba(255,82,82,0.3); }
+  .badge-inactive { background: rgba(120,144,156,0.15); color: var(--inactive); border: 1px solid rgba(120,144,156,0.3); }
+
+  .node-sensors {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+
+  .sensor-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    padding: 3px 0;
+  }
+
+  .sensor-key { color: var(--muted); font-family: var(--font-mono); font-size: 10px; }
+  .sensor-val { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text); }
+
+  .mini-bar { height: 3px; border-radius: 2px; background: var(--border); margin-top: 4px; overflow: hidden; }
+  .mini-bar-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
+
+  .node-confidence {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--muted);
+  }
+
+  .conf-val { color: var(--accent); font-weight: 700; }
+
+  /* Legend */
+  .map-legend {
+    padding: 14px 16px;
+    border-top: 1px solid var(--border);
+    background: rgba(0,0,0,0.2);
+  }
+
+  .legend-title { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-family: var(--font-mono); }
+
+  .legend-items { display: flex; gap: 14px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+  .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+
+  /* Network summary */
+  .network-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 12px;
+    border-top: 1px solid var(--border);
+    background: rgba(0,0,0,0.15);
+  }
+
+  .net-stat { text-align: center; }
+  .net-val { font-size: 18px; font-weight: 700; font-family: var(--font-mono); }
+  .net-lbl { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  /* ── OTHER SLIDES ── */
+  .slide-inner {
+    flex: 1;
+    overflow-y: auto;
+    padding: 40px 48px;
+  }
+
+  .slide-inner::-webkit-scrollbar { width: 4px; }
+  .slide-inner::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .slide-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+
+  .tag-blue { background: rgba(0,212,255,0.1); color: var(--accent); border: 1px solid rgba(0,212,255,0.25); }
+  .tag-red { background: rgba(255,82,82,0.1); color: #ff8a80; border: 1px solid rgba(255,82,82,0.25); }
+  .tag-green { background: rgba(0,230,118,0.1); color: var(--healthy); border: 1px solid rgba(0,230,118,0.25); }
+  .tag-amber { background: rgba(255,193,7,0.1); color: #ffd54f; border: 1px solid rgba(255,193,7,0.25); }
+
+  .slide-h1 {
+    font-size: 40px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 6px;
+  }
+
+  .slide-h2 {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+
+  .accent-line { color: var(--accent); }
+
+  .divider { width: 36px; height: 3px; background: var(--accent); border-radius: 2px; margin: 14px 0 20px; }
+
+  .slide-p {
+    font-size: 15px;
+    line-height: 1.75;
+    color: rgba(232,240,248,0.72);
+    max-width: 620px;
+    margin-bottom: 12px;
+  }
+
+  /* Hero two-col */
+  .hero-layout { display: grid; grid-template-columns: 1fr 380px; gap: 48px; align-items: start; }
+
+  .stat-strip { display: flex; gap: 16px; margin-top: 28px; }
+  .stat-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    flex: 1;
+  }
+  .stat-num { font-size: 24px; font-weight: 700; font-family: var(--font-mono); color: var(--accent); }
+  .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; font-family: var(--font-mono); }
+
+  /* Problem cards */
+  .prob-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
+  .prob-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 20px;
+  }
+  .prob-icon { font-size: 30px; margin-bottom: 12px; }
+  .prob-h { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .prob-p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* Hardware list */
+  .hw-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 20px; }
+  .hw-item {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 15px;
+  }
+  .hw-ico {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .hw-n { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .hw-d { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* Pipeline */
+  .pipeline {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin: 24px 0 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .pipe-step {
+    flex: 1;
+    padding: 18px 12px;
+    text-align: center;
+    border-right: 1px solid var(--border);
+    position: relative;
+  }
+  .pipe-step:last-child { border-right: none; }
+  .pipe-ico { font-size: 24px; margin-bottom: 8px; }
+  .pipe-n { font-size: 12px; font-weight: 600; }
+  .pipe-s { font-size: 10px; color: var(--muted); font-family: var(--font-mono); margin-top: 3px; }
+
+  .class-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+  .class-card {
+    border-radius: 10px;
+    padding: 18px 14px;
+    text-align: center;
+    border: 1px solid;
+  }
+  .class-pct { font-size: 26px; font-weight: 700; font-family: var(--font-mono); }
+  .class-n { font-size: 11px; margin-top: 4px; font-family: var(--font-mono); }
+  .bar-wrap { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 10px; }
+  .bar-fill { height: 4px; border-radius: 2px; }
+
+  .metrics-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 18px;
+    padding: 16px 20px;
+    background: rgba(0,212,255,0.05);
+    border: 1px solid rgba(0,212,255,0.15);
+    border-radius: 10px;
+  }
+  .metric-item { flex: 1; text-align: center; }
+  .metric-val { font-size: 20px; font-weight: 700; font-family: var(--font-mono); color: var(--accent); }
+  .metric-lbl { font-size: 10px; color: var(--muted); font-family: var(--font-mono); margin-top: 2px; }
+
+  /* Impact */
+  .impact-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 24px; }
+  .impact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .impact-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .impact-num { font-size: 26px; font-weight: 700; font-family: var(--font-mono); color: var(--accent); }
+  .impact-d { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+
+  .timeline { }
+  .tl-item { display: flex; gap: 14px; margin-bottom: 14px; }
+  .tl-left { display: flex; flex-direction: column; align-items: center; }
+  .tl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; }
+  .tl-line-v { width: 1px; flex: 1; background: var(--border); margin: 4px auto; }
+  .tl-label { font-size: 11px; color: var(--accent); font-family: var(--font-mono); font-weight: 700; }
+  .tl-text { font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: 2px; }
+
+  /* Leaflet overrides */
+  .leaflet-container { background: #0a1e2e; }
+  .leaflet-control-zoom a {
+    background: var(--surface2) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+  }
+  .leaflet-control-attribution {
+    background: rgba(6,14,24,0.8) !important;
+    color: rgba(255,255,255,0.3) !important;
+    font-size: 9px !important;
+  }
+  .leaflet-control-attribution a { color: rgba(255,255,255,0.4) !important; }
+
+  /* Custom marker styles */
+  .pulse-marker {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Tooltip */
+  .leaflet-tooltip {
+    background: var(--surface) !important;
+    border: 1px solid var(--border2) !important;
+    color: var(--text) !important;
+    font-family: var(--font-mono) !important;
+    font-size: 11px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+  }
+  .leaflet-tooltip::before { display: none !important; }
+
+  /* Slide transition nav buttons */
+  .slide-nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .nav-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 7px 22px;
+    border-radius: 20px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover { background: rgba(0,212,255,0.1); border-color: rgba(0,212,255,0.4); color: var(--accent); }
+
+  .progress-dots { display: flex; gap: 6px; align-items: center; }
+  .pdot { width: 7px; height: 7px; border-radius: 50%; background: var(--border2); cursor: pointer; transition: all 0.25s; }
+  .pdot.active { background: var(--accent); width: 20px; border-radius: 4px; }
+
+  /* scrollbar global */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🌊</div>
+    Blau<span>Edge</span>
+  </div>
+  <div class="header-meta">
+    <span><span class="live-dot"></span>LIVE INFERENCE</span>
+    <span id="clock" style="font-family:var(--font-mono)">--:--:--</span>
+    <span class="hackupc-badge">HackUPC 2026</span>
+  </div>
+</header>
+
+<!-- Slide tabs -->
+<div class="slides-nav">
+  <button class="slide-tab active" onclick="goTo(0)">01 — Overview</button>
+  <button class="slide-tab" onclick="goTo(1)">02 — Problem</button>
+  <button class="slide-tab" onclick="goTo(2)">03 — Hardware</button>
+  <button class="slide-tab" onclick="goTo(3)">04 — Live Map</button>
+  <button class="slide-tab" onclick="goTo(4)">05 — AI Model</button>
+  <button class="slide-tab" onclick="goTo(5)">06 — Impact</button>
+</div>
+
+<!-- Main content area -->
+<div class="main">
+
+  <!-- SLIDE 0: OVERVIEW -->
+  <div class="slide-content active" id="slide-0">
+    <div class="slide-inner">
+      <div class="hero-layout">
+        <div>
+          <span class="slide-tag tag-blue">EdgeAI · Marine Recovery</span>
+          <h1 class="slide-h1">Monitoring<br><span class="accent-line">Barcelona's</span><br>hidden reefs</h1>
+          <div class="divider"></div>
+          <p class="slide-p">Barcelona's 14km of breakwaters — the <em>escolleres</em> — are potential sanctuaries for marine biodiversity. Today, nobody knows which sections are thriving and which are dying.</p>
+          <p class="slide-p">BlauEdge places EdgeAI sensor nodes directly on the breakwater rocks. On-device inference on the Arduino UNO Q classifies ecosystem health in real-time. No cloud required. No connectivity. Continuous.</p>
+          <div class="stat-strip">
+            <div class="stat-box"><div class="stat-num">14km</div><div class="stat-lbl">Barcelona coastline</div></div>
+            <div class="stat-box"><div class="stat-num">0</div><div class="stat-lbl">real-time monitors today</div></div>
+            <div class="stat-box"><div class="stat-num">&lt;200ms</div><div class="stat-lbl">inference latency</div></div>
+          </div>
+        </div>
+        <div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:22px;font-family:var(--font-mono);font-size:12px;line-height:2">
+            <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">System output</div>
+            <div><span style="color:var(--muted)">node_id:</span> <span style="color:var(--accent)">A1-Barceloneta</span></div>
+            <div><span style="color:var(--muted)">temp:</span> <span style="color:#fff">19.2°C</span></div>
+            <div><span style="color:var(--muted)">light:</span> <span style="color:#fff">340 lux</span></div>
+            <div><span style="color:var(--muted)">vibration_rms:</span> <span style="color:#fff">0.41g</span></div>
+            <div><span style="color:var(--muted)">inference:</span> <span style="color:var(--healthy)">HEALTHY</span></div>
+            <div><span style="color:var(--muted)">confidence:</span> <span style="color:#fff">92%</span></div>
+            <div><span style="color:var(--muted)">action:</span> <span style="color:#ffd54f">LOG + LED_GREEN</span></div>
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);color:var(--muted);font-size:10px;display:flex;align-items:center;gap:6px">
+              <span class="live-dot"></span>updating every 500ms
+            </div>
+          </div>
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <span class="slide-tag tag-blue" style="margin:0">Arduino UNO Q</span>
+            <span class="slide-tag tag-green" style="margin:0">Edge Impulse</span>
+            <span class="slide-tag tag-amber" style="margin:0">Qualcomm</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 1: PROBLEM -->
+  <div class="slide-content" id="slide-1">
+    <div class="slide-inner">
+      <span class="slide-tag tag-red">The Problem</span>
+      <h2 class="slide-h2">Barcelona's coast is changing — and we're blind to it</h2>
+      <div class="divider"></div>
+      <p class="slide-p">The <em>escolleres</em> can either devastate or become unlikely sanctuaries for marine biodiversity. But without continuous monitoring, every restoration decision is a guess.</p>
+      <div class="prob-grid">
+        <div class="prob-card">
+          <div class="prob-icon">🌡️</div>
+          <div class="prob-h">Thermal stress events</div>
+          <div class="prob-p">Mediterranean heatwaves push water temperatures past 28°C — triggering bleaching events fatal for Posidonia seagrass and juvenile fish populations sheltering in the rocks. These spikes last hours, not days. Nobody is logging them.</div>
+        </div>
+        <div class="prob-card">
+          <div class="prob-icon">🔇</div>
+          <div class="prob-h">Acoustic silence</div>
+          <div class="prob-p">Healthy breakwaters buzz with biological activity — crabs, fish, mussels, urchins. That vibration signature is detectable by sensors. When it goes quiet, the ecosystem has collapsed. Today, nobody is listening.</div>
+        </div>
+        <div class="prob-card">
+          <div class="prob-icon">💸</div>
+          <div class="prob-h">Wasted restoration</div>
+          <div class="prob-p">Marine biologists spend €10K+ per survey, done quarterly at best. Repopulation of native species is scattered across zones with no data — many efforts fail because the zone isn't ready to support life.</div>
+        </div>
+      </div>
+      <div style="margin-top:22px;padding:18px 22px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:12px">
+        <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:6px">The BlauEdge insight</div>
+        <p class="slide-p" style="margin:0">If we identify the best recovery zones in real-time, we can direct repopulation of <em>Posidonia oceanica</em>, sea urchins, and bivalves with surgical precision — multiplying impact and slashing waste. Better biodiversity means healthier fish stocks, more fishing income, and CO₂ sequestration through blue carbon.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: HARDWARE -->
+  <div class="slide-content" id="slide-2">
+    <div class="slide-inner">
+      <span class="slide-tag tag-blue">Hardware</span>
+      <h2 class="slide-h2">The sensor node — built from the hackathon kit</h2>
+      <div class="divider"></div>
+      <p class="slide-p">Each BlauEdge node uses standard Arduino Modulino components in a waterproof enclosure bolted to the breakwater surface. No custom PCBs. Deployable today.</p>
+      <div class="hw-grid">
+        <div class="hw-item">
+          <div class="hw-ico" style="background:rgba(0,212,255,0.15)">🧠</div>
+          <div><div class="hw-n">Arduino UNO Q</div><div class="hw-d">The brain. Runs Edge Impulse INT8 quantized 1D Conv model in &lt;200ms. No cloud. No connectivity required. Processes all sensor data locally.</div></div>
+        </div>
+        <div class="hw-item">
+          <div class="hw-ico" style="background:rgba(255,82,82,0.15)">🌡️</div>
+          <div><div class="hw-n">Modulino Thermo</div><div class="hw-d">Water temperature proxy. Detects thermal stress events above 28°C — the threshold at which Posidonia bleaching begins. Critical for early-warning.</div></div>
+        </div>
+        <div class="hw-item">
+          <div class="hw-ico" style="background:rgba(255,193,7,0.15)">💡</div>
+          <div><div class="hw-n">Modulino Light</div><div class="hw-d">Water clarity and light penetration depth proxy. Low lux signals turbidity spikes or algae blooms — both indicators of ecosystem stress.</div></div>
+        </div>
+        <div class="hw-item">
+          <div class="hw-ico" style="background:rgba(156,39,176,0.15)">〰️</div>
+          <div><div class="hw-n">Modulino Vibro</div><div class="hw-d">Acoustic proxy — the most novel sensor. Marine life creates distinct low-frequency vibrations: fish, crustaceans, bivalves. Biological silence = ecosystem collapse.</div></div>
+        </div>
+        <div class="hw-item">
+          <div class="hw-ico" style="background:rgba(76,175,80,0.15)">📷</div>
+          <div><div class="hw-n">USB Web Camera</div><div class="hw-d">Surface colonization detection via FOMO object detection. Measures visible algae coverage, mussel colonies, barnacle density — a second AI layer.</div></div>
+        </div>
+        <div class="hw-item">
+          <div class="hw-ico" style="background:rgba(0,176,255,0.15)">🔔</div>
+          <div><div class="hw-n">Pixels + Buzzer</div><div class="hw-d">RGB LED displays health state color in real-time. Buzzer triggers on STRESSED classification. Field researchers know status without a laptop.</div></div>
+        </div>
+      </div>
+      <div style="margin-top:18px;padding:14px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-family:var(--font-mono);font-size:11px;color:var(--muted)">
+        Sensor → Ecosystem mapping: <span style="color:var(--text)">Temperature → thermal stress · Light → turbidity/bloom · Vibration → bioacoustics · Camera → surface colonization</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: MAP -->
+  <div class="slide-content" id="slide-3">
+    <div id="map"></div>
+    <div class="map-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Sensor Network</div>
+        <div class="sidebar-sub"><span class="live-dot"></span>6 nodes · Barceloneta escollera</div>
+      </div>
+      <div class="network-summary">
+        <div class="net-stat"><div class="net-val" style="color:var(--healthy)">2</div><div class="net-lbl">healthy</div></div>
+        <div class="net-stat"><div class="net-val" style="color:var(--recovering)">2</div><div class="net-lbl">recovering</div></div>
+        <div class="net-stat"><div class="net-val" style="color:var(--stressed)">1</div><div class="net-lbl" style="color:var(--stressed)">stressed</div></div>
+      </div>
+      <div class="node-list" id="nodeList"></div>
+      <div class="map-legend">
+        <div class="legend-title">Health states</div>
+        <div class="legend-items">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--healthy)"></div>Healthy</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--recovering)"></div>Recovering</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--stressed)"></div>Stressed</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--inactive)"></div>Inactive</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: AI MODEL -->
+  <div class="slide-content" id="slide-4">
+    <div class="slide-inner">
+      <span class="slide-tag tag-blue">EdgeAI Model</span>
+      <h2 class="slide-h2">On-device inference — no cloud, ever</h2>
+      <div class="divider"></div>
+      <p class="slide-p">The model runs entirely on the Arduino UNO Q. A 1D Convolutional Neural Network trained in Edge Impulse Studio, quantized to INT8, classifies 4 ecosystem health states from a 2-second multi-sensor window.</p>
+      <div class="pipeline">
+        <div class="pipe-step"><div class="pipe-ico">📡</div><div class="pipe-n">Sensors</div><div class="pipe-s">10Hz · 4 channels</div></div>
+        <div class="pipe-step"><div class="pipe-ico">🪟</div><div class="pipe-n">Windowing</div><div class="pipe-s">2s · 20 samples</div></div>
+        <div class="pipe-step"><div class="pipe-ico">〰️</div><div class="pipe-n">FFT features</div><div class="pipe-s">spectral analysis</div></div>
+        <div class="pipe-step"><div class="pipe-ico">🧠</div><div class="pipe-n">1D Conv NN</div><div class="pipe-s">INT8 · &lt;100KB</div></div>
+        <div class="pipe-step"><div class="pipe-ico">🏷️</div><div class="pipe-n">Classify</div><div class="pipe-s">4 states</div></div>
+        <div class="pipe-step"><div class="pipe-ico">💡</div><div class="pipe-n">Action</div><div class="pipe-s">LED + log + buzz</div></div>
+      </div>
+      <div class="class-grid">
+        <div class="class-card" style="background:rgba(0,230,118,0.08);border-color:rgba(0,230,118,0.25)">
+          <div class="class-pct" style="color:var(--healthy)">33%</div>
+          <div class="class-n" style="color:var(--healthy)">HEALTHY</div>
+          <div class="bar-wrap"><div class="bar-fill" style="width:33%;background:var(--healthy)"></div></div>
+        </div>
+        <div class="class-card" style="background:rgba(0,176,255,0.08);border-color:rgba(0,176,255,0.25)">
+          <div class="class-pct" style="color:var(--recovering)">33%</div>
+          <div class="class-n" style="color:var(--recovering)">RECOVERING</div>
+          <div class="bar-wrap"><div class="bar-fill" style="width:33%;background:var(--recovering)"></div></div>
+        </div>
+        <div class="class-card" style="background:rgba(255,82,82,0.08);border-color:rgba(255,82,82,0.25)">
+          <div class="class-pct" style="color:var(--stressed)">17%</div>
+          <div class="class-n" style="color:var(--stressed)">STRESSED</div>
+          <div class="bar-wrap"><div class="bar-fill" style="width:17%;background:var(--stressed)"></div></div>
+        </div>
+        <div class="class-card" style="background:rgba(120,144,156,0.08);border-color:rgba(120,144,156,0.25)">
+          <div class="class-pct" style="color:var(--inactive)">17%</div>
+          <div class="class-n" style="color:var(--inactive)">INACTIVE</div>
+          <div class="bar-wrap"><div class="bar-fill" style="width:17%;background:var(--inactive)"></div></div>
+        </div>
+      </div>
+      <div class="metrics-row">
+        <div class="metric-item"><div class="metric-val">&lt;200ms</div><div class="metric-lbl">inference latency</div></div>
+        <div class="metric-item"><div class="metric-val">&lt;100KB</div><div class="metric-lbl">model flash size</div></div>
+        <div class="metric-item"><div class="metric-val">87%</div><div class="metric-lbl">validation accuracy</div></div>
+        <div class="metric-item"><div class="metric-val">INT8</div><div class="metric-lbl">quantization</div></div>
+        <div class="metric-item"><div class="metric-val">0</div><div class="metric-lbl">cloud calls</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: IMPACT -->
+  <div class="slide-content" id="slide-5">
+    <div class="slide-inner">
+      <span class="slide-tag tag-green">Impact</span>
+      <h2 class="slide-h2">A smarter, greener Barcelona coastline</h2>
+      <div class="divider"></div>
+      <div class="impact-layout">
+        <div>
+          <div class="impact-grid">
+            <div class="impact-card"><div class="impact-num">10x</div><div class="impact-d">Cheaper than manual marine surveys (€10K+ per survey)</div></div>
+            <div class="impact-card"><div class="impact-num">24/7</div><div class="impact-d">Continuous vs. quarterly spot surveys — catch heatwave events as they happen</div></div>
+            <div class="impact-card"><div class="impact-num">CO₂</div><div class="impact-d">Posidonia recovery sequesters blue carbon at scale — a climate benefit</div></div>
+            <div class="impact-card"><div class="impact-num">+fish</div><div class="impact-d">Better biodiversity → healthier fish stocks → economic benefit for local fisheries</div></div>
+          </div>
+          <div style="margin-top:14px;padding:14px 18px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:10px">
+            <p style="font-size:13px;color:rgba(232,240,248,0.8);line-height:1.6">Built on open hardware. Mozilla Public License 2.0. Any coastal city can deploy BlauEdge nodes. The data is open for EU Marine Strategy Framework Directive reporting.</p>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">Deployment roadmap</div>
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-left"><div class="tl-dot" style="background:var(--accent)"></div><div class="tl-line-v"></div></div>
+              <div><div class="tl-label">Now — Prototype</div><div class="tl-text">1 node · HackUPC proof of concept · live inference demo</div></div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-left"><div class="tl-dot" style="background:var(--healthy)"></div><div class="tl-line-v"></div></div>
+              <div><div class="tl-label">3 months — Pilot</div><div class="tl-text">5–10 nodes on Barceloneta breakwater · field validation with UPC marine biologists</div></div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-left"><div class="tl-dot" style="background:#ffd54f"></div><div class="tl-line-v"></div></div>
+              <div><div class="tl-label">1 year — City scale</div><div class="tl-text">50+ nodes · full coastline coverage · open data dashboard for Barcelona city</div></div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-left"><div class="tl-dot" style="background:#ce93d8"></div></div>
+              <div><div class="tl-label">3 years — Regional</div><div class="tl-text">Costa Daurada · Costa Brava · EU MSFD compliance data · replication to any coastal city</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom nav -->
+<div class="slide-nav-bar">
+  <button class="nav-btn" onclick="prevSlide()">← Back</button>
+  <div class="progress-dots" id="dots"></div>
+  <button class="nav-btn" onclick="nextSlide()">Next →</button>
+</div>
+
+<script>
+// ── Clock ──
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toTimeString().slice(0,8);
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── Slide nav ──
+const TOTAL = 6;
+let current = 0;
+const tabs = document.querySelectorAll('.slide-tab');
+const slides = document.querySelectorAll('.slide-content');
+const dotsEl = document.getElementById('dots');
+
+for (let i = 0; i < TOTAL; i++) {
+  const d = document.createElement('div');
+  d.className = 'pdot' + (i === 0 ? ' active' : '');
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+}
+
+function goTo(n) {
+  slides[current].classList.remove('active');
+  tabs[current].classList.remove('active');
+  dotsEl.children[current].classList.remove('active');
+  current = (n + TOTAL) % TOTAL;
+  slides[current].classList.add('active');
+  tabs[current].classList.add('active');
+  dotsEl.children[current].classList.add('active');
+  if (current === 3) initMap();
+}
+
+function nextSlide() { goTo(current + 1); }
+function prevSlide() { goTo(current - 1); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextSlide();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevSlide();
+});
+
+// ── Node data — real Barceloneta breakwater coordinates ──
+const nodes = [
+  {
+    id: 'A1', name: 'Breakwater North — Start',
+    lat: 41.3891, lng: 2.1965,
+    state: 'healthy',
+    temp: '19.2°C', tempPct: 35,
+    light: '340 lux', lightPct: 68,
+    vibro: '0.41 g', vibroPct: 82,
+    cam: '68% algae',
+    conf: '92%',
+    desc: 'Strong biological activity. Mussel and barnacle colonization. Ideal repopulation candidate.'
+  },
+  {
+    id: 'A2', name: 'Breakwater North — Mid',
+    lat: 41.3878, lng: 2.1992,
+    state: 'healthy',
+    temp: '18.9°C', tempPct: 30,
+    light: '380 lux', lightPct: 76,
+    vibro: '0.38 g', vibroPct: 76,
+    cam: '72% algae',
+    conf: '89%',
+    desc: 'Excellent light penetration and vibration signature. High surface colonization detected.'
+  },
+  {
+    id: 'B1', name: 'Central Breakwater',
+    lat: 41.3862, lng: 2.2015,
+    state: 'recovering',
+    temp: '21.4°C', tempPct: 55,
+    light: '210 lux', lightPct: 42,
+    vibro: '0.18 g', vibroPct: 36,
+    cam: '41% algae',
+    conf: '85%',
+    desc: 'Recovering trend observed over 3 weeks. Temperature elevated but within safe range. Monitor closely.'
+  },
+  {
+    id: 'C1', name: 'Southern Section — Alert',
+    lat: 41.3845, lng: 2.2034,
+    state: 'stressed',
+    temp: '29.1°C', tempPct: 95,
+    light: '110 lux', lightPct: 22,
+    vibro: '0.03 g', vibroPct: 6,
+    cam: '12% algae',
+    conf: '94%',
+    desc: '⚠ CRITICAL: Temperature spike to 29.1°C. Near-zero biological acoustic activity. Avoid repopulation. Investigate thermal source.'
+  },
+  {
+    id: 'C2', name: 'Southern Section — End',
+    lat: 41.3831, lng: 2.2048,
+    state: 'inactive',
+    temp: '24.0°C', tempPct: 62,
+    light: '60 lux', lightPct: 12,
+    vibro: '0.01 g', vibroPct: 2,
+    cam: '4% algae',
+    conf: '91%',
+    desc: 'No detectable biological activity. Very low light, near-zero vibration. Zone needs intervention before repopulation.'
+  },
+  {
+    id: 'D1', name: 'Port Vell Junction',
+    lat: 41.3817, lng: 2.2062,
+    state: 'recovering',
+    temp: '22.3°C', tempPct: 58,
+    light: '190 lux', lightPct: 38,
+    vibro: '0.22 g', vibroPct: 44,
+    cam: '38% algae',
+    conf: '87%',
+    desc: 'Post-storm recovery pattern. Increasing vibration signal over last 7 days. Positive trajectory.'
+  }
+];
+
+const stateColors = {
+  healthy: '#00e676',
+  recovering: '#00b0ff',
+  stressed: '#ff5252',
+  inactive: '#78909c'
+};
+
+// ── Map init (lazy) ──
+let mapInited = false;
+let leafletMap = null;
+
+function initMap() {
+  if (mapInited) return;
+  mapInited = true;
+
+  leafletMap = L.map('map', {
+    center: [41.3860, 2.2010],
+    zoom: 15,
+    zoomControl: true,
+    attributionControl: true
+  });
+
+  // Dark tile layer — CartoDB Dark Matter
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap contributors © CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(leafletMap);
+
+  // Add nodes
+  nodes.forEach((node, i) => {
+    const color = stateColors[node.state];
+
+    // Pulsing circle marker
+    const pulseIcon = L.divIcon({
+      className: '',
+      html: `
+        <div style="position:relative;width:48px;height:48px;display:flex;align-items:center;justify-content:center">
+          <div style="
+            position:absolute;
+            width:48px;height:48px;
+            border-radius:50%;
+            background:${color};
+            opacity:0.15;
+            animation:leafletPulse 2s ease-out infinite;
+          "></div>
+          <div style="
+            width:24px;height:24px;
+            border-radius:50%;
+            background:${color};
+            border:2px solid rgba(255,255,255,0.8);
+            box-shadow:0 0 12px ${color}88;
+            display:flex;align-items:center;justify-content:center;
+            font-family:'Space Mono',monospace;
+            font-size:8px;
+            font-weight:700;
+            color:#0a1628;
+            cursor:pointer;
+            position:relative;
+            z-index:2;
+          ">${node.id}</div>
+        </div>
+      `,
+      iconSize: [48, 48],
+      iconAnchor: [24, 24]
+    });
+
+    const marker = L.marker([node.lat, node.lng], { icon: pulseIcon }).addTo(leafletMap);
+
+    const tooltipHtml = `
+      <div style="font-family:'Space Mono',monospace;min-width:180px">
+        <div style="font-weight:700;color:${color};margin-bottom:6px;font-size:12px">${node.id} — ${node.name}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;font-size:10px;color:rgba(232,240,248,0.7)">
+          <span>Temp</span><span style="color:#fff">${node.temp}</span>
+          <span>Light</span><span style="color:#fff">${node.light}</span>
+          <span>Vibration</span><span style="color:#fff">${node.vibro}</span>
+          <span>Camera</span><span style="color:#fff">${node.cam}</span>
+        </div>
+        <div style="margin-top:8px;padding:4px 8px;border-radius:4px;background:${color}22;color:${color};font-size:10px;text-align:center;font-weight:700">${node.state.toUpperCase()} · ${node.conf}</div>
+      </div>
+    `;
+
+    marker.bindTooltip(tooltipHtml, { permanent: false, direction: 'top', offset: [0, -28] });
+    marker.on('click', () => selectNode(i));
+  });
+
+  // Draw breakwater line
+  const breakwaterCoords = nodes.map(n => [n.lat, n.lng]);
+  L.polyline(breakwaterCoords, {
+    color: 'rgba(255,255,255,0.25)',
+    weight: 2,
+    dashArray: '6,6'
+  }).addTo(leafletMap);
+
+  // Build sidebar
+  buildNodeList();
+
+  // CSS for pulse animation in Leaflet
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes leafletPulse {
+      0% { transform: scale(1); opacity: 0.2; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function selectNode(i) {
+  const node = nodes[i];
+  document.querySelectorAll('.node-card').forEach((c, j) => {
+    c.classList.toggle('selected', j === i);
+  });
+  if (leafletMap) {
+    leafletMap.flyTo([node.lat, node.lng], 16, { duration: 0.8 });
+  }
+}
+
+function buildNodeList() {
+  const list = document.getElementById('nodeList');
+  list.innerHTML = '';
+  nodes.forEach((node, i) => {
+    const color = stateColors[node.state];
+    const card = document.createElement('div');
+    card.className = 'node-card';
+    card.innerHTML = `
+      <div class="node-card-top">
+        <span class="node-id">${node.id}</span>
+        <span class="state-badge badge-${node.state}">${node.state.toUpperCase()}</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-bottom:8px">${node.name}</div>
+      <div class="node-sensors">
+        <div>
+          <div class="sensor-row"><span class="sensor-key">TEMP</span><span class="sensor-val">${node.temp}</span></div>
+          <div class="mini-bar"><div class="mini-bar-fill" style="width:${node.tempPct}%;background:${node.tempPct > 75 ? 'var(--stressed)' : color}"></div></div>
+        </div>
+        <div>
+          <div class="sensor-row"><span class="sensor-key">LIGHT</span><span class="sensor-val">${node.light}</span></div>
+          <div class="mini-bar"><div class="mini-bar-fill" style="width:${node.lightPct}%;background:${color}"></div></div>
+        </div>
+        <div>
+          <div class="sensor-row"><span class="sensor-key">VIBRO</span><span class="sensor-val">${node.vibro}</span></div>
+          <div class="mini-bar"><div class="mini-bar-fill" style="width:${node.vibroPct}%;background:${color}"></div></div>
+        </div>
+        <div>
+          <div class="sensor-row"><span class="sensor-key">CAMERA</span><span class="sensor-val" style="font-size:9px">${node.cam}</span></div>
+          <div class="mini-bar"><div class="mini-bar-fill" style="width:${node.lightPct}%;background:${color}"></div></div>
+        </div>
+      </div>
+      <div class="node-confidence">
+        <span>${node.desc.slice(0,50)}${node.desc.length>50?'…':''}</span>
+        <span class="conf-val">${node.conf}</span>
+      </div>
+    `;
+    card.onclick = () => selectNode(i);
+    list.appendChild(card);
+  });
+}
+
+// Simulate live data fluctuation
+setInterval(() => {
+  if (!mapInited) return;
+  nodes.forEach(node => {
+    if (node.state === 'healthy' || node.state === 'recovering') {
+      const delta = (Math.random() - 0.5) * 0.2;
+      node.vibroPct = Math.max(10, Math.min(100, node.vibroPct + delta));
+    }
+  });
+}, 2000);
+</script>
+</body>
+</html>
