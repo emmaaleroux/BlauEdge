@@ -47,7 +47,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 24px;
-    height: 56px;
+    height: 64px;
     border-bottom: 1px solid var(--border);
     background: rgba(6,14,24,0.95);
     backdrop-filter: blur(12px);
@@ -59,30 +59,21 @@
   .logo {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 18px;
+    gap: 12px;
+    font-size: 22px;
     font-weight: 700;
     letter-spacing: -0.5px;
     color: var(--text);
     text-decoration: none;
   }
 
-  /* Logo image placeholder — drop logo.png into the repo
-     and this <img> will automatically display it.          */
   .logo-img {
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
     object-fit: contain;
-    background: linear-gradient(135deg, #00d4ff, #0060aa); /* fallback colour */
+    background: linear-gradient(135deg, #00d4ff, #0060aa);
     display: block;
-  }
-
-  /* If the image fails to load, hide the broken-image icon
-     and keep the gradient background visible as a placeholder */
-  .logo-img[src="./logo.png"]:not([complete]),
-  .logo-img[src="./logo.png"][naturalWidth="0"] {
-    /* The gradient fallback is already on the element */
   }
 
   .logo span { color: var(--accent); }
@@ -94,10 +85,10 @@
     background: rgba(0,230,118,0.1);
     border: 1px solid rgba(0,230,118,0.35);
     color: var(--healthy);
-    padding: 5px 14px;
+    padding: 6px 16px;
     border-radius: 20px;
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     cursor: pointer;
     letter-spacing: 0.5px;
@@ -659,21 +650,6 @@
   }
   .rec-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--stressed); animation: blink 1s ease-in-out infinite; }
 
-  /* Object detection bounding box mockups */
-  .det-box {
-    position: absolute;
-    border: 1.5px solid;
-    border-radius: 3px;
-    pointer-events: none;
-  }
-  .det-label {
-    position: absolute;
-    top: -20px; left: -1px;
-    font-family: var(--font-mono); font-size: 9px; font-weight: 700;
-    padding: 2px 6px; border-radius: 3px 3px 0 0;
-    white-space: nowrap;
-  }
-
   /* Depth / coordinates overlay */
   .cam-coords {
     position: absolute; bottom: 22px; left: 22px;
@@ -683,22 +659,37 @@
     pointer-events: auto;
   }
 
-  /* No-signal stripes — the "no real camera" watermark */
+  /* No-signal message — centered prominent warning */
   .cam-no-signal {
-    position: absolute; inset: 0; z-index: 3;
+    position: absolute; inset: 0; z-index: 6;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    gap: 10px;
+    gap: 16px;
+    pointer-events: none;
   }
-  .cam-no-signal-text {
-    font-family: var(--font-mono); font-size: 14px; font-weight: 700;
-    color: rgba(232,240,248,0.18);
-    letter-spacing: 3px; text-transform: uppercase;
+  .cam-no-signal-icon {
+    font-size: 48px;
+    opacity: 0.6;
   }
-  .cam-awaiting {
-    font-family: var(--font-mono); font-size: 10px;
-    color: rgba(0,212,255,0.4); letter-spacing: 2px;
+  .cam-no-signal-title {
+    font-family: var(--font-mono); font-size: 22px; font-weight: 700;
+    color: rgba(232,240,248,0.85);
+    letter-spacing: 2px; text-transform: uppercase;
+  }
+  .cam-no-signal-sub {
+    font-family: var(--font-mono); font-size: 12px;
+    color: rgba(0,212,255,0.6); letter-spacing: 1.5px;
+    text-transform: uppercase;
     animation: blink 2s ease-in-out infinite;
+  }
+  .cam-no-signal-badge {
+    margin-top: 8px;
+    padding: 8px 24px;
+    border-radius: 30px;
+    background: rgba(255,82,82,0.08);
+    border: 1px solid rgba(255,82,82,0.3);
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--stressed); letter-spacing: 1px;
   }
 
   /* Camera right panel */
@@ -755,10 +746,6 @@
 
 <header>
   <div class="header-left">
-    <!-- ══ LOGO ══
-         Replace ./logo.png with your actual logo file.
-         The image will auto-display once the file is in the repo.
-         The gradient background is a fallback when no image is found. -->
     <a class="logo" href="#" onclick="goTo(0); return false;">
       <img
         src="./logo.png"
@@ -769,7 +756,6 @@
       Blau<span>Edge</span>
     </a>
 
-    <!-- ══ LIVE nav button — navigates to the Live page ══ -->
     <button class="header-live-btn" onclick="goToLive()">
       <span class="live-dot"></span>
       Live
@@ -787,17 +773,16 @@
 </header>
 
 <div class="slides-nav">
-  <button class="slide-tab active" onclick="goTo(0)">01 — Overview</button>
-  <button class="slide-tab" onclick="goTo(1)">02 — Node Map</button>
-  <button class="slide-tab" onclick="goTo(2)">03 — State of all nodes</button>
-  <button class="slide-tab" onclick="goTo(3)">04 — Impact</button>
-  <button class="slide-tab live-tab" onclick="goToLive()" style="color:var(--healthy);border-bottom:2px solid transparent">⬤ Live</button>
+  <button class="slide-tab active" onclick="goTo(0)">Overview</button>
+  <button class="slide-tab" onclick="goTo(1)">Node Map</button>
+  <button class="slide-tab" onclick="goTo(2)">State of all nodes</button>
+  <button class="slide-tab" onclick="goTo(3)">Impact</button>
 </div>
 
 <div class="main">
 
   <!-- ════════════════════════════════════════════
-       SLIDE 0 — OVERVIEW (merged: Overview + Problem + Hardware)
+       SLIDE 0 — OVERVIEW
        ════════════════════════════════════════════ -->
   <div class="slide-content active" id="slide-0">
     <div class="slide-inner">
@@ -870,12 +855,10 @@
   </div>
 
   <!-- ════════════════════════════════════════════
-       SLIDE 1 — NODE MAP  (formerly "Live Map")
-       The Results sidebar has been removed.
+       SLIDE 1 — NODE MAP
        ════════════════════════════════════════════ -->
   <div class="slide-content" id="slide-1">
     <div id="map" style="flex:1;height:100%;z-index:1;"></div>
-    <!-- Sidebar removed as requested — results are in slide-2 -->
     <div class="map-sidebar">
       <div class="sidebar-header">
         <div class="sidebar-title">Node Map</div>
@@ -906,7 +889,7 @@
   </div>
 
   <!-- ════════════════════════════════════════════
-       SLIDE 2 — STATE OF ALL NODES (new window)
+       SLIDE 2 — STATE OF ALL NODES
        ════════════════════════════════════════════ -->
   <div class="slide-content" id="slide-2">
     <div class="slide-inner">
@@ -921,7 +904,7 @@
   </div>
 
   <!-- ════════════════════════════════════════════
-       SLIDE 3 — IMPACT (unchanged)
+       SLIDE 3 — IMPACT
        ════════════════════════════════════════════ -->
   <div class="slide-content" id="slide-3">
     <div class="slide-inner">
@@ -1010,33 +993,6 @@
               <span style="color:var(--muted)">Avg (last 60s):</span>
               <span id="nd-temp-avg" style="color:var(--text);font-weight:700">—</span>
             </div>
-            <!--
-              ══════════════════════════════════════════════════════
-              ARDUINO INTEGRATION POINT — TEMPERATURE
-              ══════════════════════════════════════════════════════
-              To feed real Arduino data into this chart:
-
-              OPTION A — Serial read (via p5.js / WebSerial API):
-                1. Open a serial port: `const port = await navigator.serial.requestPort();`
-                2. In your read loop, parse JSON from the Arduino:
-                   `const reading = JSON.parse(serialLine);`
-                3. Call: `pushTempReading(reading.temperature_c);`
-
-              OPTION B — Arduino App Lab / REST endpoint:
-                Replace the TEMP_MOCK_INTERVAL block below with:
-
-                  async function fetchArduinoTemp() {
-                    // 👇 Replace with your Arduino App Lab endpoint URL
-                    const res = await fetch('https://YOUR_APPLAB_ENDPOINT/temperature');
-                    const json = await res.json();
-                    pushTempReading(json.temperature_c);
-                  }
-                  setInterval(fetchArduinoTemp, 1000);
-
-              The `pushTempReading(value)` function (defined below)
-              handles all chart updates automatically.
-              ══════════════════════════════════════════════════════
-            -->
           </div>
 
           <!-- ── pH Panel ─────────────────────── -->
@@ -1059,16 +1015,6 @@
             <div class="ph-chart-wrap">
               <canvas id="phChart"></canvas>
             </div>
-            <!--
-              ══════════════════════════════════════════════════════
-              pH DATA NOTE
-              ══════════════════════════════════════════════════════
-              This panel currently uses simulated fluctuating data
-              generated by `mockPhUpdate()` (see JS below).
-              To wire in real Arduino pH sensor data, call
-              `pushPhReading(value)` the same way as temperature.
-              ══════════════════════════════════════════════════════
-            -->
           </div>
 
           <!-- ── Fish Counter ─────────────────── -->
@@ -1103,7 +1049,6 @@
 
 <!-- ════════════════════════════════════════════
      CAMERA LIVE OVERLAY (fullscreen)
-     Visual mockup — no real video logic
      ════════════════════════════════════════════ -->
 <div class="camera-overlay" id="cameraOverlay">
   <div class="cam-topbar">
@@ -1120,12 +1065,6 @@
   <div class="cam-main">
     <!-- Feed area -->
     <div class="cam-feed-area">
-      <!-- Fake "no signal" watermark — remove when real camera is wired in -->
-      <div class="cam-no-signal">
-        <div class="cam-no-signal-text">awaiting video feed</div>
-        <div class="cam-awaiting">● connect camera source to enable</div>
-      </div>
-
       <!-- Placeholder icon underneath the tint layers -->
       <div class="cam-placeholder-icon">🎥</div>
 
@@ -1141,20 +1080,6 @@
           <span class="rec-dot"></span> REC · DEMO MODE
         </div>
 
-        <!-- Simulated bounding boxes (decorative) -->
-        <div class="det-box" style="left:22%;top:35%;width:12%;height:18%;border-color:rgba(0,230,118,0.8)">
-          <div class="det-label" style="background:rgba(0,230,118,0.85);color:#000">Diplodus 0.87</div>
-        </div>
-        <div class="det-box" style="left:55%;top:45%;width:10%;height:14%;border-color:rgba(0,230,118,0.8)">
-          <div class="det-label" style="background:rgba(0,230,118,0.85);color:#000">Diplodus 0.79</div>
-        </div>
-        <div class="det-box" style="left:38%;top:55%;width:9%;height:13%;border-color:rgba(255,82,82,0.9)">
-          <div class="det-label" style="background:rgba(255,82,82,0.9);color:#fff">Siganus 0.73</div>
-        </div>
-        <div class="det-box" style="left:70%;top:30%;width:8%;height:12%;border-color:rgba(0,176,255,0.8)">
-          <div class="det-label" style="background:rgba(0,176,255,0.85);color:#000">Oblada 0.91</div>
-        </div>
-
         <!-- Depth / coord watermark -->
         <div class="cam-coords">
           <div>LAT 41.38620°N</div>
@@ -1162,6 +1087,14 @@
           <div id="cam-depth">DEPTH 3.2 m</div>
           <div style="margin-top:4px;color:rgba(0,212,255,0.5)" id="cam-fps">FRAME — fps</div>
         </div>
+      </div>
+
+      <!-- Centered "No video signal" warning -->
+      <div class="cam-no-signal">
+        <div class="cam-no-signal-icon">📵</div>
+        <div class="cam-no-signal-title">No Video Signal</div>
+        <div class="cam-no-signal-sub">● awaiting camera source</div>
+        <div class="cam-no-signal-badge">No camera found</div>
       </div>
     </div>
 
@@ -1183,25 +1116,6 @@
         <div class="cam-panel-section-title">Node Stats</div>
         <div class="cam-stats-grid" id="camStatsGrid">
           <!-- Populated by openCamera() -->
-        </div>
-      </div>
-
-      <!-- How to wire a real camera -->
-      <div class="cam-panel-section" style="border-color:rgba(0,212,255,0.2);background:rgba(0,212,255,0.04)">
-        <div class="cam-panel-section-title" style="color:var(--accent)">Connect real camera</div>
-        <div style="font-size:10px;font-family:var(--font-mono);color:var(--muted);line-height:1.7">
-          <!--
-            CAMERA INTEGRATION POINT
-            ════════════════════════
-            To show a real video stream here:
-            1. Add a <video> element inside .cam-feed-area
-            2. getUserMedia: `navigator.mediaDevices.getUserMedia({video:true})`
-            3. Or point to an MJPEG stream: `<img src="http://YOUR_PI_IP:PORT/stream">`
-            4. Remove the .cam-no-signal overlay once connected
-          -->
-          Replace .cam-no-signal overlay with a<br>
-          &lt;video&gt; or &lt;img src="mjpeg"&gt; element.<br>
-          See inline HTML comments for details.
         </div>
       </div>
     </div>
@@ -1292,7 +1206,7 @@ updateClock();
 //  SLIDE NAV
 //  Slides: 0=Overview, 1=NodeMap, 2=StateOfAllNodes, 3=Impact, live=Live
 // ═══════════════════════════════════════════════════════════════════
-const TOTAL_SLIDES = 4; // numbered slides (not counting Live)
+const TOTAL_SLIDES = 4;
 let current = 0;
 const tabs   = document.querySelectorAll('.slide-tab');
 const allSlides = document.querySelectorAll('.slide-content:not(#slide-live)');
@@ -1309,7 +1223,6 @@ for (let i = 0; i < TOTAL_SLIDES; i++) {
 function goTo(n) {
   // Deactivate live page
   liveSlide.classList.remove('active');
-  tabs[4].classList.remove('active');
 
   allSlides[current].classList.remove('active');
   tabs[current].classList.remove('active');
@@ -1327,7 +1240,6 @@ function goToLive() {
   tabs[current].classList.remove('active');
   dotsEl.children[current].classList.remove('active');
   liveSlide.classList.add('active');
-  tabs[4].classList.add('active');
   buildNodePicker();
 }
 
@@ -1393,7 +1305,7 @@ function applyNodeData(data, live) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-//  NODE LIST (map sidebar — unchanged from original)
+//  NODE LIST (map sidebar)
 // ═══════════════════════════════════════════════════════════════════
 const stateColors = {
   healthy:   '#00e676',
@@ -1580,7 +1492,7 @@ function buildNodePicker() {
 let tempChartInstance  = null;
 let phChartInstance    = null;
 let phMockInterval     = null;
-let tempMockInterval   = null;  // Only used in demo mode
+let tempMockInterval   = null;
 
 // Rolling buffers (last 60 data points)
 const CHART_MAX_POINTS = 60;
@@ -1615,18 +1527,12 @@ function openLiveNode(idx) {
   if (phMockInterval) clearInterval(phMockInterval);
   phMockInterval = setInterval(mockPhUpdate, 1500);
 
-  // ── DEMO temperature mock ────────────────────────────────────────
-  // This mock simulates sensor readings.
-  // In production, REMOVE this interval and instead call
-  // pushTempReading(value) from your Arduino data source.
-  // See the ARDUINO INTEGRATION POINT comment in the HTML above.
   if (tempMockInterval) clearInterval(tempMockInterval);
   tempMockInterval = setInterval(() => {
     const lastTemp = tempHistory[tempHistory.length - 1] || node.live.temperature_c;
     const newTemp  = +(lastTemp + (Math.random() - 0.5) * 0.3).toFixed(2);
     pushTempReading(newTemp);
   }, 2000);
-  // ────────────────────────────────────────────────────────────────
 }
 
 function closeLiveNode() {
@@ -1675,19 +1581,6 @@ function initTempChart(seedVal) {
   });
 }
 
-/**
- * pushTempReading(value)
- * ══════════════════════
- * Call this function with the latest temperature reading from your sensor.
- * It updates the rolling chart and all UI elements automatically.
- *
- * Example (from Arduino WebSerial):
- *   port.addEventListener('data', e => pushTempReading(e.detail.temperature_c));
- *
- * Example (from REST endpoint):
- *   const data = await fetch('/api/temp').then(r=>r.json());
- *   pushTempReading(data.value);
- */
 function pushTempReading(value) {
   tempHistory.push(value);
   if (tempHistory.length > CHART_MAX_POINTS) tempHistory.shift();
@@ -1746,22 +1639,12 @@ function initPhChart(seedVal) {
   });
 }
 
-/**
- * mockPhUpdate() — simulates slightly fluctuating pH readings.
- * Replace this with pushPhReading(realValue) calls from your sensor.
- */
 function mockPhUpdate() {
-  // Gentle random walk ±0.04 per step, clamped to [7.4, 8.6]
   const delta = (Math.random() - 0.5) * 0.04;
   phCurrentVal = Math.max(7.4, Math.min(8.6, +(phCurrentVal + delta).toFixed(3)));
   pushPhReading(phCurrentVal);
 }
 
-/**
- * pushPhReading(value)
- * ════════════════════
- * Call this with the latest pH reading. Handles chart + UI update.
- */
 function pushPhReading(value) {
   phHistory.push(value);
   if (phHistory.length > CHART_MAX_POINTS) phHistory.shift();
@@ -1810,7 +1693,7 @@ function refreshLiveNode(node) {
   const el = document.getElementById('nd-fish-total');
   if (el) el.textContent = total;
   const rateEl = document.getElementById('nd-fish-rate');
-  if (rateEl) rateEl.textContent = (total * 4); // rough per-minute estimate
+  if (rateEl) rateEl.textContent = (total * 4);
 
   const bd = document.getElementById('fishBreakdown');
   if (!bd) return;
