@@ -5,7 +5,7 @@
 
 ---
 
-## 💡 Inspiration
+## Inspiration
 
 Recent efforts in Barcelona showed that over **100 local marine species returned to the coastline in just a few months**. That rapid recovery made us realise how resilient marine ecosystems can be — and also how little real-time data we have to monitor and guide that recovery.
 
@@ -13,7 +13,7 @@ Barcelona's breakwaters (*escolleres*) could be thriving underwater sanctuaries,
 
 ---
 
-## 🌍 What It Does
+## What It Does
 
 BlauEdge is a real-time marine ecosystem monitoring system that evaluates the health of coastal zones along Barcelona's coastline using two inputs:
 
@@ -67,17 +67,6 @@ The detected species count, combined with the temperature reading, feeds a simpl
 
 ---
 
-## Software Architecture
-
-```
-blauedge-hackupc2026/
-├── sketch.ino     # C++ — Hardware layer: reads sensors & notifies Python Bridge
-├── main.py        # Python — Backend layer: TimeSeries DB, REST API, Video Streamer
-├── index.html     # HTML/JS — Frontend layer: Live map, HUD, charts, and error handling
-└── README.md
-```
-
-
 ### API (Python → Browser)
 
 | Endpoint | Method | What it returns |
@@ -114,6 +103,7 @@ blauedge-hackupc2026/
 4. Plug in the Arduino UNO Q with the Modulino Thermo and USB Camera connected.
 5. Click the Run button in App Lab to provision the board and start the Python server.
 6. Open index.html to view the live dashboard!
+
 (If the camera stream fails or isn't plugged in, the UI will gracefully fall back to a "No Video Signal" placeholder while keeping environmental data flowing!)
 
 ---
@@ -127,31 +117,30 @@ blauedge-hackupc2026/
 
 ---
 
-## 👥 Team
+## Team
 
 | Name | Role |
 |---|---|
-| [Agustina Ciaponi] | Hardware + Arduino |
-| [Emma Leroux Fernandez] | Edge Impulse model |
-| [Marti Amat] | Python bridge |
-| [Guillem Arevalo Morell] | Dashboard + frontend |
+| [Agustina Ciaponi] | Python bridge |
+| [Emma Leroux Fernández-Armesto] | Arduino Hardware, Edge Impulse model |
+| [Martí Amat] | Python bridge |
+| [Guillem Arévalo Morell] | Dashboard + frontend |
 
 **HackUPC 2026**
 
 ---
 
-## 📜 License
+## License
 
 see [LICENSE.txt](LICENSE.txt)
 
 ---
 
-## 🔗 Links
+## Links
 
-- 🌐 [Devpost](https://hackupc-2026.devpost.com/) ← add link
-- 🛠️ [Arduino Project Hub](https://projecthub.arduino.cc/) ← add link
-- 🤖 [Edge Impulse Project](https://studio.edgeimpulse.com/) ← add link
-- 📹 Demo Video ← add link
+- 🌐 [Devpost](https://devpost.com/software/blauedge?ref_content=my-projects-tab&ref_feature=my_projects) 
+- 🛠️ [Arduino Project Hub](https://projecthub.arduino.cc/projects/89865fd3-87e5-4fde-a297-a40eb8f39453/preview?_gl=1*yami0d*_up*MQ..*_ga*MTA4OTk0MDA2LjE3NzcyMDU4NTE.*_ga_NEXN8H46L5*czE3NzcyMDU4NTAkbzEkZzAkdDE3NzcyMDU4NTAkajYwJGwwJGgyMDI0MDI4NjM./)
+- 📹 [Demo Video](https://youtu.be/FScRb-mFu6M)
 
 ---
 
